@@ -2,7 +2,7 @@ using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
 
-public class Path {
+public class PlayerPath {
 	public GameObject m_goPathHead;
 	public List<GameObject> m_goPathSection = new List<GameObject>();
 	Vector3 m_vPrevHeadPos = Vector3.zero;

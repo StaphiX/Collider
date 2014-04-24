@@ -3,11 +3,11 @@ using System.Collections;
 
 public class PathManager{
 	
-	Path m_tPath;
+	PlayerPath m_tPath;
 	
 	// Use this for initialization
 	public void Init () {
-		m_tPath = new Path();
+		m_tPath = new PlayerPath();
 		m_tPath.Init();
 	}
 	

@@ -12,7 +12,7 @@ public class Gate{
 	public static float SPAWNDISTANCE = 85.0f;
 	public static float DEFAULTROTATION = Mathf.PI;
 	public static float DEFUALTPATHWIDH = 3.1f;
-	public static float DEFAULTPATHRADIUS = Path.RADIUS;
+	public static float DEFAULTPATHRADIUS = PlayerPath.RADIUS;
 	public static float m_fPathSizeR = 0.0f;
 	
 	public Gate(GameObject goGateSection, int iNumSections, float fRotation, Vector3 vBasePos,float fCurveTime)
