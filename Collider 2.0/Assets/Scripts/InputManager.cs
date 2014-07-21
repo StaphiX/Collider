@@ -1,231 +1,204 @@
-using UnityEngine;
+﻿using UnityEngine;
+using System;
 using System.Collections;
+using System.Collections.Generic;
 
-public class InputManager {
-	
-	//Number of possible touches
-	public const int MAXTOUCHES = 4;
-	
-	private static bool GetIsTouchDevice()
+public class InputManager
+{
+	static List<InputTouch> m_tPressedTouch = new List<InputTouch>();
+	static List<InputTouch> m_tReleasedTouch = new List<InputTouch>();
+	static List<InputTouch> m_tHeldTouch = new List<InputTouch>();
+	public static float m_fTouchTolerance = 0;
+	int m_iFramesPressed = 0;
+
+	public static void Init () 
 	{
-		switch(Application.platform)
-		{
-		case RuntimePlatform.IPhonePlayer:
-			return true;
-		case RuntimePlatform.Android:	
-			return true;
-		case RuntimePlatform.OSXEditor:
-			return false;
-		case RuntimePlatform.OSXPlayer:
-			return false;
-		case RuntimePlatform.WindowsPlayer:	
-			return false;
-		case RuntimePlatform.OSXWebPlayer:	
-			return false;
-		case RuntimePlatform.OSXDashboardPlayer:	
-			return false;
-		case RuntimePlatform.WindowsWebPlayer:	
-			return false;
-		case RuntimePlatform.WiiPlayer:	
-			return false;
-		case RuntimePlatform.WindowsEditor:	
-			return false;
-		case RuntimePlatform.XBOX360:	
-			return false;
-		case RuntimePlatform.PS3:	
-			return false;
-		case RuntimePlatform.NaCl:	
-			return false;
-		case RuntimePlatform.FlashPlayer:
-			return false;
-		default:
-			return false;
-		}
-	}
-	
-	public static bool GetTouchPoint(out Vector3 vTouchPoint)
-	{
-		return GetTouchPoint(0,out vTouchPoint);
-	}
-	
-	public static bool GetFirstTouchInRect(Rect tTouchRect, out Vector3 vTouchPoint, int iPadding = 0)
-	{
-		for(int iTouch  = 0; iTouch < MAXTOUCHES; ++iTouch)
-		{
-			if(GetTouchPoint(iTouch, out vTouchPoint))
-			{
-				if(vTouchPoint.x > tTouchRect.x - iPadding &&
-					vTouchPoint.y > tTouchRect.y - iPadding &&
-					vTouchPoint.x < tTouchRect.x + tTouchRect.width + iPadding &&
-					vTouchPoint.y < tTouchRect.y + tTouchRect.height + iPadding)
-				{
-					return true;
-				}
-			}
-		}
-		vTouchPoint = Vector3.zero;
-		return false;
-	}
-	
-	public static bool GetAllTouchPoints(out Vector3[] vTouchPoint)
-	{
-		int iNumberTouches = 0;
-		int iMaxTouches = MAXTOUCHES;
-		if(!GetIsTouchDevice())
-		{
-			iMaxTouches = 1;
-		}
-		Vector3[] vAllTouchPoints = new Vector3[iMaxTouches];
-		for(int iTouch = 0; iTouch < iMaxTouches; ++iTouch)
-		{
-			if(GetTouchPoint(iTouch, out vAllTouchPoints[iTouch]))
-				++iNumberTouches;
-		}
-		vTouchPoint = new Vector3[iNumberTouches];
-		for(int iTouch = 0; iTouch < iNumberTouches; ++iTouch)
-		{
-			vTouchPoint[iTouch] = vAllTouchPoints[iTouch];
-		}
-		if(iNumberTouches > 0)
-			return true;
-		else
-			return false;
 		
 	}
-	
-	public static bool GetTouchPoint(int iTouchIndex,out Vector3 vTouchPoint)
+
+	public static void Update () 
 	{
-		if(GetIsTouchDevice())
+		ClearPressTouches();
+		m_tReleasedTouch.Clear(); //Release touches only exist for a frame
+		if(Input.GetMouseButtonUp(0))
 		{
-			//Checks if there is any touch began, stationary or moving
-			if(Input.touchCount > iTouchIndex)
-			{
-				if(Input.GetTouch(iTouchIndex).phase != TouchPhase.Ended || 
-					Input.GetTouch(iTouchIndex).phase != TouchPhase.Canceled)
-				{
-					vTouchPoint = Input.touches[iTouchIndex].position;
-				}
-				else
-				{
-					vTouchPoint = Vector3.zero;
-					//Return false if there is no touch
-					return false;
-				}
-			}
-			else
-			{
-				vTouchPoint = Vector3.zero;
-				//Return false if there is no touch
-				return false;
-			}
+			float fX = 0;
+			float fY = 0;
+			ConvertMousePosition(Input.mousePosition, out fX, out fY);
+			AddRelease(new Vector2(fX, fY), 0);
 		}
-		else
+
+		if(Input.GetMouseButtonDown(0))
 		{
-			if(Input.GetMouseButton(0))
-			{
-				vTouchPoint = Input.mousePosition;
-			}
-			else
-			{
-				vTouchPoint = Vector3.zero;;
-				//Return false if there is no touch
-				return false;
-			}
+			float fX = 0;
+			float fY = 0;
+			ConvertMousePosition(Input.mousePosition, out fX, out fY);
+			AddPress(new Vector2(fX, fY), 0);
 		}
-		return true;
 	}
-	
-	public static bool GetTouched()
+
+	static void ClearPressTouches() //Remove press touches that have been released
 	{
-		if(GetIsTouchDevice())
+		foreach(InputTouch tTouch in m_tReleasedTouch)
 		{
-			//Checks if there is any touch began, stationary or moving
-			if(Input.touchCount > 0)
+			for(int iPressTouch = 0; iPressTouch < m_tPressedTouch.Count; ++iPressTouch)
 			{
-				if(Input.GetTouch( 0 ).phase != TouchPhase.Ended || 
-					Input.GetTouch( 0 ).phase != TouchPhase.Canceled)
+				if(m_tPressedTouch[iPressTouch].iTouchIndex == tTouch.iTouchIndex)
 				{
-					return true;
+					m_tPressedTouch.RemoveAt(iPressTouch);
+					iPressTouch--;
 				}
-				else return false;
-			}
-			else
-			{
-				return false;
 			}
 		}
-		else
+	}
+
+	public static void AddRelease(Vector2 vPosition, int iTouch)
+	{
+		foreach(InputTouch tTouch in m_tReleasedTouch)
 		{
-			if(Input.GetMouseButton(0))
+			if(tTouch.iTouchIndex == iTouch)
 			{
+				tTouch.vPosition = vPosition;
+				return;
+			}
+		}
+		m_tReleasedTouch.Add(new InputTouch(vPosition, iTouch));
+	}
+
+	public static void AddPress(Vector2 vPosition, int iTouch)
+	{
+		foreach(InputTouch tTouch in m_tPressedTouch)
+		{
+			if(tTouch.iTouchIndex == iTouch)
+			{
+				tTouch.vPosition = vPosition;
+				return;
+			}
+		}
+		m_tPressedTouch.Add(new InputTouch(vPosition, iTouch));
+	}
+
+	public static bool IsPressInRect(Rect tRect)
+	{
+		return IsPressInRect(tRect.x, tRect.y, tRect.width, tRect.height);
+	}
+
+	public static bool IsPressInRect(float fX, float fY, float fW, float fH)
+	{
+		foreach(InputTouch tTouch in m_tPressedTouch)
+		{
+			if(IsTouchInRect(tTouch, fX, fY, fW, fH))
 				return true;
-			}
-			else
-			{
-				return false;
-			}
 		}
+		return false;
 	}
-	
-	public static int GetTouchPressedDown()
+
+	public static bool IsReleaseInRectF(Rect tRect)
 	{
-		if(GetIsTouchDevice())
+		return IsReleaseInRectF(tRect.x, tRect.y, tRect.width, tRect.height);
+	}
+
+	public static bool IsReleaseInRectF(float fX, float fY, float fW, float fH)
+	{
+		ConvertFutilePosition(new Vector2(fX, fY), out fX, out fY, fW, fH);
+		ConvertFutileDimensions(new Vector2(fW, fH), out fW, out fH);
+
+		return IsReleaseInRect(fX, fY, fW, fH);
+	}
+
+	public static bool IsReleaseInRect(float fX, float fY, float fW, float fH)
+	{
+		foreach(InputTouch tTouch in m_tReleasedTouch)
 		{
-			for(int iTouch = 0; iTouch < MAXTOUCHES; ++iTouch)
+			if(IsTouchInRect(tTouch, fX, fY, fW, fH))
+				return true;
+		}
+		return false;
+	}
+
+	static bool IsTouchInRect(InputTouch tTouch, float fX, float fY, float fW, float fH)
+	{
+		if(tTouch.vPosition.x >= 0 && tTouch.vPosition.y >= 0)
+		{
+			if(tTouch.vPosition.x > fX - m_fTouchTolerance)
 			{
-				//Checks if there is any touch began, stationary or moving
-				if(Input.touchCount > iTouch)
+				if(tTouch.vPosition.y > fY - m_fTouchTolerance)
 				{
-					if(Input.GetTouch(iTouch).phase != TouchPhase.Ended || 
-						Input.GetTouch(iTouch).phase != TouchPhase.Canceled)
+					if(tTouch.vPosition.x < fX + fW + m_fTouchTolerance)
 					{
-						return iTouch;
-					}
+						if(tTouch.vPosition.y < fY + fH + m_fTouchTolerance)
+						{
+							return true;
+						}	
+					}	
 				}
 			}
-			return -1;
 		}
-		else
-		{
-			if(Input.GetMouseButtonDown(0))
-			{
-				return 0;
-			}
-			else
-			{
-				return 0;
-			}
-		}
+		return false;
 	}
-	
-	public static int GetTouchReleased()
+
+	public static bool IsKeyReleased(KeyCode eKey)
 	{
-		if(GetIsTouchDevice())
-		{
-			for(int iTouch = 0; iTouch < MAXTOUCHES; ++iTouch)
-			{
-				//Checks if there is any touch ended, or canceled
-				if(Input.touchCount > iTouch) 
-				{
-					if(Input.GetTouch(iTouch).phase == TouchPhase.Ended || 
-						Input.GetTouch(iTouch).phase == TouchPhase.Canceled)
-					{
-						return iTouch;
-					}
-				}
-			}
-			return -1;
-		}
-		else
-		{
-			if(Input.GetMouseButtonUp(0))
-			{
-				return 0;
-			}
-			else
-			{
-				return -1;
-			}
-		}
+		return Input.GetKeyUp(eKey);
+	}
+
+	public static bool IsKeyDown(KeyCode eKey)
+	{
+		return Input.GetKey(eKey);
+	}
+
+
+	public static void ConvertFutilePosition(Vector2 vPos, out float fX,out float fY)
+	{
+		ConvertFutilePosition(vPos, out fX, out fY, 0, 0);
+	}
+
+	public static void ConvertFutilePosition(Vector2 vPos, out float fX,out float fY, float fW, float fH)
+	{
+		//Futile uses world position offset from center
+		//Offset From top edge instead
+		vPos.y *= -1;
+		//Offset these values by half to compensate for centering
+		vPos.x -= fW/2;
+		vPos.y -= fH/2;
+		vPos = Futile.stage.LocalToScreen(vPos);
+		fX = vPos.x;
+		fY = vPos.y;
+	}
+
+	public static void ConvertFutileDimensions(Vector2 vDim, out float fX,out float fY)
+	{
+		fX = vDim.x;
+		fY = vDim.y;
+	}
+
+	public static void ConvertMousePosition(Vector2 vPos, out float fX,out float fY)
+	{
+		//Mouse uses bottom left as 0,0
+		//Unity uses top left as 0,0
+		fX = vPos.x;
+		fY = vPos.y * -1 + Screen.height;
 	}
 }
+
+public class InputTouch
+{
+	public Vector2 vPosition;
+	public int iTouchIndex = 0;
+
+	public InputTouch(Vector2 _vPosition, int _iTouch)
+	{
+		vPosition = _vPosition;
+		iTouchIndex = _iTouch;
+	}
+
+	public static InputTouch zero
+	{
+		get
+		{
+			return new InputTouch(-Vector2.one, 0);
+		}
+	}
+
+}
+

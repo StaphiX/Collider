@@ -88,6 +88,7 @@
 		Vector3 vStartPoint = GetPointAtTime(fStartTime);
 		float fTimeStep = 0.001f;
 		float fTolerance = 0.001f;
+		int iMaxSearches = 20;
 		float fCurrentTime = fStartTime + fTimeStep;
 		Vector3 vCurrentPoint = GetPointAtTime(fCurrentTime);
 		float fCurrentDistance = (vCurrentPoint - vStartPoint).magnitude;
@@ -97,7 +98,7 @@
 		fCurrentDistance = (vCurrentPoint - vStartPoint).magnitude;
 		
 		int iSearchCount = 0;
-		while((fCurrentDistance > fDistanceToGet + fTolerance || fCurrentDistance < fDistanceToGet - fTolerance) && iSearchCount < 20)
+		while((fCurrentDistance > fDistanceToGet + fTolerance || fCurrentDistance < fDistanceToGet - fTolerance) && iSearchCount < iMaxSearches)
 		{
 			fCurrentTime = fDistanceToGet / fCurrentDistance * (fCurrentTime - fStartTime) + fStartTime;
 			vCurrentPoint = GetPointAtTime(fCurrentTime);

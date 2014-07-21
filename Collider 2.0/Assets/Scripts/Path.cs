@@ -134,22 +134,11 @@ public class PlayerPath {
 		Rect tRightRect = new Rect(Mathf.Min(Screen.height*0.3f, fMaxTouchSize), 0, Mathf.Min(Screen.height*0.3f, fMaxTouchSize), Screen.height);
 		Rect tBoostRect = new Rect(Screen.width /2, 0, Screen.width /2, Screen.height);
 		
-		Vector3 vTouchPos = new Vector3(-1,-1,-1);
-		if(Input.GetMouseButton(0))
-		{
-			vTouchPos = Input.mousePosition;
-			m_iTouchTime += 1;
-		}
-		else
-		{
-			m_iTouchTime = 0;
-		}
-		
-		if(Input.GetKey(KeyCode.LeftArrow) || InputManager.GetFirstTouchInRect(tLeftRect, out vTouchPos))
+		if(Input.GetKey(KeyCode.LeftArrow) || InputManager.IsPressInRect(tLeftRect))
 			bLeft = true;
-		if(Input.GetKey(KeyCode.RightArrow) || InputManager.GetFirstTouchInRect(tRightRect, out vTouchPos))
+		if(Input.GetKey(KeyCode.RightArrow) || InputManager.IsPressInRect(tRightRect))
 			bRight = true;
-		if(Input.GetKey(KeyCode.DownArrow) || InputManager.GetFirstTouchInRect(tBoostRect, out vTouchPos))
+		if(Input.GetKey(KeyCode.DownArrow) || InputManager.IsPressInRect(tBoostRect))
 			bBoost = true;
 		
 		if(bRight)
